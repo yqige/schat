@@ -1,10 +1,19 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:schat/app/chatScreen.dart';
-import 'package:schat/app/login.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:schat/app/home.dart';
+import 'package:schat/app/user_provider.dart';
 
-void main() => runApp(new MaterialApp(
-    title: '谈天说地',
-    home: new ChatScreen(),
-));
+void main() => runApp(MyApp());
 
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return new CupertinoApp(
+      title: 'TheGorgeousLogin',
+//      theme: new ThemeData(
+//        primarySwatch: Colors.blue,
+//      ),
+      home: new UserContainer(user: null, child: new HomePage(),
+      ),
+    );
+  }
+}
