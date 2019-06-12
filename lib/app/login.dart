@@ -163,7 +163,7 @@ class _LoginPageState extends State<LoginPage> {
         child: CupertinoButton.filled(
           child: const Text(
             '登陆',
-//            style: new TextStyle(),
+            style: TextStyle(fontStyle: FontStyle.italic),
           ),
           padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 36.0),
 //          color: Colors.black,
