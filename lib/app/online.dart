@@ -14,10 +14,10 @@ import 'package:schat/app/messageItemPage.dart';
 import 'package:schat/app/model/userMessage.dart';
 
 const List<UserMessage> _userMessages = <UserMessage>[
-  UserMessage(userName:'刘小妞',userPic:'',newContent:'2123', dateTime: null),
-  UserMessage(userName:'🐎小宝',userPic:'',newContent:'212dsd3', dateTime: null),
-  UserMessage(userName:'🐎天赐',userPic:'',newContent:'客户就开始打瞌睡', dateTime: null),
-  UserMessage(userName:'刘天颍',userPic:'',newContent:'五日晚', dateTime: null),
+  UserMessage(userName:'刘小妞',userPic:'1',newContent:'2123', dateTime: null),
+  UserMessage(userName:'🐎小宝',userPic:'2',newContent:'212dsd3', dateTime: null),
+  UserMessage(userName:'🐎天赐',userPic:'3',newContent:'客户就开始打瞌睡', dateTime: null),
+  UserMessage(userName:'刘天颍',userPic:'4',newContent:'五日晚', dateTime: null),
 ];
 
 const int _kChildCount = 20;
@@ -182,7 +182,7 @@ class MessageRowItem extends StatelessWidget {
 //                  color: color,
 //                  borderRadius: BorderRadius.circular(50),
                   shape: BoxShape.circle,
-                  image: DecorationImage(image: AssetImage(userMessage.userPic))
+                  image: DecorationImage(image: AssetImage('assets/images/head/${userMessage.userPic}.png'))
                 ),
               ),
               Expanded(

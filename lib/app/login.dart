@@ -70,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 120.0),
+            const SizedBox(height: 100.0),
             PrimaryColorOverride(
               color: kShrineBrown900,
               child: CupertinoTextField(
@@ -163,7 +163,7 @@ class _LoginPageState extends State<LoginPage> {
         child: CupertinoButton.filled(
           child: const Text(
             '登陆',
-            style: TextStyle(fontStyle: FontStyle.italic),
+            style: TextStyle(fontFamily: 'Raleway'),
           ),
           padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 36.0),
 //          color: Colors.black,

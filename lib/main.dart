@@ -9,9 +9,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return new CupertinoApp(
       title: 'TheGorgeousLogin',
-//      theme: new ThemeData(
-//        primarySwatch: Colors.blue,
-//      ),
       home: new UserContainer(user: null, child: new HomePage(),
       ),
     );
