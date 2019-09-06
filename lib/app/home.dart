@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:schat/app/model/user.dart';
 import 'package:schat/app/online.dart';
 import 'package:schat/app/user_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+//import 'package:url_launcher/url_launcher.dart';
 
 import 'login.dart';
 
@@ -14,7 +14,7 @@ class HomePage extends StatelessWidget {
     User user = UserContainer.of(context).user;
     if (user == null) {
       return CupertinoApp(
-        home: LoginPage(),
+        home: LoginPage(null),
         initialRoute: '/login',
       );
     }else{

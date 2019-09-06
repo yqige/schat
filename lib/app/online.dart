@@ -10,9 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:schat/app/chatPage.dart';
 import 'package:schat/app/common.dart';
 import 'package:schat/app/contactView.dart';
-import 'package:schat/app/messageItemPage.dart';
 import 'package:schat/app/model/userMessage.dart';
-
+import 'package:web_socket_channel/web_socket_channel.dart';
 const List<UserMessage> _userMessages = <UserMessage>[
   UserMessage(userName:'刘小妞',userPic:'1',newContent:'2123', dateTime: null),
   UserMessage(userName:'🐎小宝',userPic:'2',newContent:'212dsd3', dateTime: null),
@@ -29,7 +28,6 @@ class Online extends StatelessWidget {
   });
 
   static const String routeName = '/chating';
-
   final List<UserMessage> userMessages;
 
   @override

@@ -3,12 +3,14 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:schat/app/call_page.dart';
 import 'package:schat/app/event/userMessageResponse.dart';
 
 import 'package:groovin_material_icons/groovin_material_icons.dart';
 import 'package:schat/app/common.dart';
 import 'package:schat/app/utils/sendMessage.dart';
-
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:common_utils/common_utils.dart';
 class ChatPage extends StatefulWidget {
   const ChatPage({this.color, this.colorName, this.index});
   final Color color;
@@ -22,6 +24,8 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   TextEditingController _chatTextController;
   var sm = SendMessage();
+  FlutterSound flutterSound = new FlutterSound();
+  var _recorderSubscription;
   final List<ConversationRow> _messages = <ConversationRow>[];
   //定义发送文本事件的处理函数
   void _handleSubmitted(String text) {
@@ -29,29 +33,35 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
     _chatTextController.clear();        //清空输入框
+    sm.sendSocketMessage(text);
+    if (!mounted) {
+      return;
+    }
     //状态变更，向聊天记录中插入新记录
     setState(() {
       _messages.insert(0, new ConversationRow(    //定义新的消息记录控件对象
-        text: text,
+        content: text,
       ));      //插入自己新的消息记录
     });
-    sm.send(text);
   }
   @override
   void initState() {
     super.initState();
+    print('状态改变了');
     _chatTextController = TextEditingController();
     _messages.addAll(_buildConversation());
     eventBus.on<UserMessageResponse>().listen((event) {
       print("收到event>>" + event.message);
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _messages.insert(0,
             ConversationRow(
-              avatar: ConversationAvatar(
-                type: 2,
-                text: '4',
-                color: Color(0xFFFD5015)),
-              text:event.message));
+                avatar: ConversationAvatar(
+                    text: '4',
+                    color: Color(0xFFFD5015)),
+                content:event.message));
       });
     });
   }
@@ -81,10 +91,13 @@ class _ChatPageState extends State<ChatPage> {
                           reverse: true,
                         )), // end
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                      padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 10.0),
                       child: _buildChatTextField(),
                     ),
-                    _buildOperateMethod(),
+                    Container(
+                      color: CupertinoColors.lightBackgroundGray,
+                      child: _buildOperateMethod(),
+                    ),
                   ]
               ),)
         ),
@@ -96,21 +109,21 @@ class _ChatPageState extends State<ChatPage> {
           .map((item) => Builder(
         builder: (context) {
           return CupertinoButton(
+              padding: EdgeInsets.all(1.0),
               child: Icon(item['icon'],
-                  color: CupertinoColors.inactiveGray
+                  color: CupertinoColors.black
               ),
               onPressed: () {
                 //TODO : 第三方登录方法
                 operator(item['title']);
               });
         },
-      ))
-          .toList(),
+      )).toList(),
     );
   }
   operator(String method) async {
-    if(method.compareTo("语音") == 0){
-      File imageFile = await ImagePicker.pickImage();
+    if(method.compareTo("图片") == 0){
+      File imageFile = await ImagePicker.pickImage(source: ImageSource.camera);
       int timestamp = new DateTime.now().millisecondsSinceEpoch;
 //        StorageReference storageReference = FirebaseStorage
 //            .instance
@@ -121,10 +134,38 @@ class _ChatPageState extends State<ChatPage> {
 //        Uri downloadUrl = (await uploadTask.future).downloadUrl;
       _messages.insert(0,ConversationRow(
           avatar: ConversationAvatar(
-              type: 2,
               text: '4',
               color: Color(0xFFFD5015)),
-          text: 'downloadUrl'));
+          content: imageFile,type: 1,));
+    }else if(method.compareTo("语音") == 0) {
+      String path = await flutterSound.startRecorder(null);
+      print('startRecorder: $path');
+      _recorderSubscription = flutterSound.onRecorderStateChanged.listen((e) {
+        DateTime date = new DateTime.fromMillisecondsSinceEpoch(e.currentPosition.toInt());
+        String txt = DateUtil.getDateStrByDateTime(date, format: DateFormat.DEFAULT);
+        txt = txt.substring(14,txt.length);
+      });
+      String result = await flutterSound.stopRecorder();
+      if (_recorderSubscription != null) {
+        _recorderSubscription.onData((rs){
+          print('rs:$rs');
+        });
+        _recorderSubscription.cancel();
+        _recorderSubscription = null;
+      }
+      String path_ = await flutterSound.startPlayer(result);
+      print('startPlayer: $path_');
+      String result_ = await flutterSound.stopPlayer();
+      print('stopPlayer: $result_');
+    }else if(method.compareTo("视频") == 0){
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => new CallPage(
+                channelName: 'test',
+              )));
+    }else if(method.compareTo("表情") == 0){
+
     }
   }
   List _operateMethod = [
@@ -306,60 +347,53 @@ class ContactHeader extends StatelessWidget {
 List<ConversationRow> _buildConversation() {
   return <ConversationRow>[
     const ConversationRow(
-      text: "My Xanadu doesn't look right",
+      content: "My Xanadu doesn't look right",
     ),
     const ConversationRow(
       avatar: ConversationAvatar(
-        type: 2,
-        text: '1',
         color: Color(0xFFFD5015),
       ),
-      text: "We'll rush you a new one.\nIt's gonna be incredible",
-    ),
-    const ConversationRow(
-      text: 'Awesome thanks!',
-    ),
-    const ConversationRow(
-      avatar: ConversationAvatar(
-        type: 2,
-        text: '2',
-        color: Color(0xFF34CAD6),
-      ),
-      text: "We'll send you our\nnewest Labrador too!",
-    ),
-    const ConversationRow(
-      text: 'Yay',
-    ),
-    const ConversationRow(
-      avatar: ConversationAvatar(
-        type: 2,
-        text: '3',
-        color: Color(0xFFFD5015),
-      ),
-      text: "Actually there's one more thing...",
-    ),
-    const ConversationRow(
-      text: "What's that?",
+      content: "We'll rush you a new one.\nIt's gonna be incredible",
     ),
   ];
 }
 
 class ConversationRow extends StatelessWidget {
-  const ConversationRow({this.avatar, this.text});
+  const ConversationRow({this.avatar, this.content, this.type = 0});
 
   final ConversationAvatar avatar;
-  final String text;
-
+  final dynamic content;
+  final int type;// 0 为文本 1 为图片 2 为语音 3 为视频 4 为文档
   @override
   Widget build(BuildContext context) {
     final List<Widget> children = <Widget>[];
     if (avatar != null)
       children.add(avatar);
-
     final bool isSelf = avatar == null;
+    Widget item;
+    switch(type){
+      case 0:
+        item = Text(
+          content,
+          style: TextStyle(
+            color: isSelf
+                ? CupertinoColors.white
+                : CupertinoColors.black,
+            letterSpacing: -0.4,
+            fontSize: 15.0,
+            fontWeight: FontWeight.w400,
+          ),
+          softWrap: true,
+//              overflow: TextOverflow.ellipsis,
+        );
+        break;
+      case 1:
+        break;
+
+    }
     children.add(
       ConversationBubble(
-        text: text,
+        content: item,
         color: isSelf
             ? ConversationBubbleColor.blue
             : ConversationBubbleColor.gray,
@@ -382,32 +416,20 @@ enum ConversationBubbleColor {
 }
 
 class ConversationBubble extends StatelessWidget {
-  const ConversationBubble({this.text, this.color});
+  const ConversationBubble({this.content, this.color});
 
-  final String text;
+  final Widget content;
   final ConversationBubbleColor color;
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('mjb:${text.length}');
+    debugPrint('mjb:${content}');
     return
       Flexible(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
             padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
-            child: Text(
-              text,
-              style: TextStyle(
-                color: color == ConversationBubbleColor.blue
-                    ? CupertinoColors.white
-                    : CupertinoColors.black,
-                letterSpacing: -0.4,
-                fontSize: 15.0,
-                fontWeight: FontWeight.w400,
-              ),
-              softWrap: true,
-//              overflow: TextOverflow.ellipsis,
-            ),
+            child: content,
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.all(Radius.circular(18.0)),
               color: color == ConversationBubbleColor.blue
@@ -420,55 +442,27 @@ class ConversationBubble extends StatelessWidget {
 }
 
 class ConversationAvatar extends StatelessWidget {
-  const ConversationAvatar({this.type = 1, this.text, this.color});
+  const ConversationAvatar({this.type = 1, this.text = "1", this.color});
 
   final String text;
   final Color color;
   final int type;
-  _bd(){
-    BoxDecoration decoration = BoxDecoration(
-      shape: BoxShape.circle,
-      gradient: LinearGradient(
-        begin: FractionalOffset.topCenter,
-        end: FractionalOffset.bottomCenter,
-        colors: <Color>[
-          color,
-          Color.fromARGB(
-            color.alpha,
-            (color.red - 60).clamp(0, 255),
-            (color.green - 60).clamp(0, 255),
-            (color.blue - 60).clamp(0, 255),
-          ),
-        ],
-      ),
-    );
-    switch(type){
-      case 1: // 文本
-        break;
-      case 2: // 图片
-        decoration = BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage(
-              'assets/images/head/$text.png',
-            ),
-          ),
-          shape: BoxShape.circle,
-        );
-        break;
-      default:
-        break;
-    }
-    return decoration;
-  }
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 30.0,
       width: 30.0,
-      decoration: _bd(),
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage(
+            'assets/images/head/$text.png',
+          ),
+        ),
+        shape: BoxShape.circle,
+      ),
       margin: const EdgeInsets.only(left: 8.0, bottom: 8.0),
       padding: const EdgeInsets.all(12.0),
-      child: type == 1 ?Text(
+      child: type == 2 ?Text(
         text,
         style: const TextStyle(
           color: CupertinoColors.white,

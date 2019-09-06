@@ -4,49 +4,62 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:groovin_material_icons/groovin_material_icons.dart';
 import 'package:schat/app/color/colors.dart';
-import 'package:schat/app/home.dart';
-import 'package:schat/app/model/user.dart';
-import 'package:schat/app/user_provider.dart';
-
+import 'package:schat/app/online.dart';
+import 'package:fluwx/fluwx.dart' as fluwx;
+import 'package:schat/app/utils/loading.dart';
+import 'package:simple_auth/simple_auth.dart';
 class LoginPage extends StatefulWidget {
+  final BasicAuthAuthenticator authenticator;
+  LoginPage(this.authenticator);
   @override
   _LoginPageState createState() => _LoginPageState();
 }
-
 class _LoginPageState extends State<LoginPage> {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String _email = '21323@sd.vv', _password = 'wqqe';
+  bool isWeChatInstalled = false;
   bool _isObscure = true;
   Color _eyeColor = CupertinoColors.inactiveGray;
 //  final TextEditingController _userNameEditController = TextEditingController();
 //  final TextEditingController _pwdEditController = TextEditingController();
   List _loginMethod = [
+//    {
+//      "title": "facebook",
+//      "icon": GroovinMaterialIcons.facebook,
+//    },
+//    {
+//      "title": "google",
+//      "icon": GroovinMaterialIcons.google,
+//    },
+//    {
+//      "title": "twitter",
+//      "icon": GroovinMaterialIcons.twitter,
+//    },
     {
-      "title": "facebook",
-      "icon": GroovinMaterialIcons.facebook,
-    },
-    {
-      "title": "google",
-      "icon": GroovinMaterialIcons.google,
-    },
-    {
-      "title": "twitter",
-      "icon": GroovinMaterialIcons.twitter,
-    },
-    {
-      "title": "twitter",
+      "title": "wechat",
       "icon": GroovinMaterialIcons.wechat,
     },
     {
-      "title": "twitter",
+      "title": "qqchat",
       "icon": GroovinMaterialIcons.qqchat,
     },
   ];
   @override
   void initState() {
     super.initState();
+    _initFluwx();
 //    _pwdEditController.addListener(() => setState(() => {}));
 //    _userNameEditController.addListener(() => setState(() => {}));
+  }
+  _initFluwx() async {
+    await fluwx.register(
+        appId: "wxe5d48e88e3339efd",
+        doOnAndroid: true,
+        doOnIOS: true,
+        enableMTA: false);
+    isWeChatInstalled = await fluwx.isWeChatInstalled();
+    print("is installed $isWeChatInstalled");
   }
   @override
   Widget build(BuildContext context) {
@@ -74,14 +87,9 @@ class _LoginPageState extends State<LoginPage> {
             PrimaryColorOverride(
               color: kShrineBrown900,
               child: CupertinoTextField(
-                onSubmitted: (String value) => _email = value,
-//                validator: (String value) {
-//                  var emailReg = RegExp(
-//                      r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?");
-//                  if (!emailReg.hasMatch(value)) {
-//                    return '请输入正确的邮箱地址';
-//                  }
-//                },
+                autofocus: true,
+                keyboardType: TextInputType.emailAddress,
+                controller: emailController,
                 decoration: const BoxDecoration(
                   border: Border(bottom: BorderSide(width: 0.0, color: CupertinoColors.inactiveGray)),
                 ),
@@ -92,12 +100,8 @@ class _LoginPageState extends State<LoginPage> {
             PrimaryColorOverride(
               color: kShrineBrown900,
               child: CupertinoTextField(
-                onSubmitted: (String value) => _password = value,
-//                validator: (String value) {
-//                  if (value.isEmpty) {
-//                    return '请输入密码';
-//                  }
-//                },
+                autofocus: false,
+                controller: passwordController,
                 placeholder: '密码',
                 decoration: BoxDecoration(
                   border: Border(bottom: BorderSide(width: 0.0, color: CupertinoColors.inactiveGray)),
@@ -131,13 +135,15 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(height: 30.0),
             _buildOtherLoginText(),
             _buildOtherMethod(context),
-            _buildRegisterText(context),
+//            _showLoading ? _loadingContainer : null,
+//            _buildRegisterText(context),
           ],
         ),
       )
     );
   }
   Row _buildOtherMethod(BuildContext context) {
+    LoadingPage loadingPage = new LoadingPage(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: _loginMethod
@@ -149,6 +155,17 @@ class _LoginPageState extends State<LoginPage> {
                   ),
               onPressed: () {
                 //TODO : 第三方登录方法
+                if(!isWeChatInstalled){
+                  _message("微信客户端未安装");
+                }
+                fluwx.sendAuth(scope: "snsapi_userinfo").then((onValue){
+                  print('snsapi_userinfo:$onValue');
+
+                });
+                fluwx.responseFromAuth.listen((response){
+                  //do something
+                  print('response:$response');
+                });
               });
         },
       ))
@@ -167,11 +184,34 @@ class _LoginPageState extends State<LoginPage> {
           ),
           padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 36.0),
 //          color: Colors.black,
-          onPressed: () {
-            if (_formKey.currentState.validate()) {
-              ///只有输入的内容符合要求通过才会到达此处
-              _formKey.currentState.save();
-              _toLogin();
+          onPressed: () async{
+            String _email = emailController.text, _password = passwordController.text;
+            print('email:$_email , password:$_password');
+            if(_email.isEmpty){
+              _message('请输入邮箱!');
+              return;
+            }
+            if(_password.isEmpty){
+              _message('请输入密码!');
+              return;
+            }
+            LoadingPage loadingPage = new LoadingPage(context);
+            loadingPage.show();
+            // 验证用户名及密码是否正确
+            bool right = await widget.authenticator.verifyCredentials(_email, _password);
+            loadingPage.close();
+            print('用户名及密码是否正确--------,$right');
+//            Navigator.pop(context);
+            if(right){
+              Navigator.push<void>(
+                context,
+                CupertinoPageRoute<void>(
+                  builder: (BuildContext context) => new Online(),
+                  maintainState: true,
+                ),
+              );
+            }else {
+              _message('邮箱或密码错误!');
             }
           },
           borderRadius: BorderRadius.circular(15.0),
@@ -179,20 +219,23 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-  void _toLogin() {
-    print('email:$_email , password:$_password');
-    // 验证用户名及密码是否正确
-    User user = User(_email, _password);
-    print('user--------1,$user');
-    Navigator.push<void>(
-      context,
-      CupertinoPageRoute<void>(
-        builder: (BuildContext context) => new UserContainer(user: user, child: new HomePage()),
-        maintainState: true,
-      ),
+  _message(String message){
+    var alert =
+    new CupertinoAlertDialog(
+      content: Text(message),
+      actions: <Widget>[
+        CupertinoDialogAction(
+          child: const Text('确定'),
+          onPressed: () {
+            Navigator.pop(context, 'Disallow');
+          },
+        )
+      ],
     );
-
+    showCupertinoDialog(
+        context: context, builder: (BuildContext context) => alert);
   }
+
 //      launch("http://www.baidu.com", forceWebView: true); // 打开新网页
   }
   Align _buildRegisterText(BuildContext context) {
@@ -229,7 +272,19 @@ class _LoginPageState extends State<LoginPage> {
           style: TextStyle(color: CupertinoColors.inactiveGray, fontSize: 14.0),
         ));
   }
-
+//  final _loadingContainer = Container(
+//      constraints: BoxConstraints.expand(),
+//      color: Colors.black12,
+//      child: Center(
+//        child: Opacity(
+//          opacity: 0.9,
+//          child: SpinKitCircle(
+//            color: Colors.red,
+//            size: 50.0,
+//          ),
+//        ),
+//      )
+//  );
   Padding _buildForgetPasswordText(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0),
@@ -241,7 +296,7 @@ class _LoginPageState extends State<LoginPage> {
             style: TextStyle(fontSize: 14.0, color: CupertinoColors.inactiveGray),
           ),
           onPressed: () {
-            Navigator.pop(context);
+//            Navigator.pop(context);
           },
         ),
       ),

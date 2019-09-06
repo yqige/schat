@@ -11,9 +11,7 @@ class UserProvider extends InheritedWidget {
 
   UserProvider({this.user, this.child}) : super(child: child);
 
-  /**
-   * 该回调决定当数据发生变化时，是否通知子树中依赖数据的Widget
-   */
+  /// 该回调决定当数据发生变化时，是否通知子树中依赖数据的Widget
   @override
   bool updateShouldNotify(InheritedWidget oldWidget) {
     return true;
